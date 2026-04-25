@@ -5,6 +5,144 @@ import SmartToyIcon from '@mui/icons-material/SmartToy';
 import PersonIcon from '@mui/icons-material/Person';
 import axios from 'axios';
 
+const STATIC_QA = [
+  {
+    keys: ['hypotension', 'tension basse', 'tas', 'pression'],
+    answer: `SafeOp AI détecte l'hypotension quand la TAS descend sous 90 mmHg ou chute de plus de 20% par rapport à la valeur basale.
+
+Protocole automatique SFAR 2023 :
+1. Alerte critique émise en < 3 secondes
+2. Éphédrine IV bolus (dose calculée pour le patient : 0.15 mg/kg)
+3. Accélération perfusion Ringer Lactate (débit ×2)
+4. Position Trendelenburg si possible
+5. Réévaluation TA dans 3 minutes — médecin notifié
+
+Cause probable : vasodilatation induite par le propofol (effet dose-dépendant documenté SFAR).`,
+  },
+  {
+    keys: ['bradycardie', 'fc basse', 'fréquence cardiaque', 'atropine'],
+    answer: `Détection bradycardie : FC < 50 bpm ou chute > 30% de la valeur basale.
+
+Protocole automatique :
+1. Alerte BRADYCARDIE générée immédiatement
+2. Atropine IV bolus recommandée (0.02 mg/kg, minimum 0.5 mg adulte)
+3. Vérification ECG — exclusion bloc auriculo-ventriculaire
+4. Si résistant : Éphédrine ou Adrénaline 0.01 mg/kg
+5. Chirurgien averti — pause stimulation recommandée
+
+Mécanisme : réflexe vagal par stimulation parasympathique peropératoire.`,
+  },
+  {
+    keys: ['dosage', 'dose', 'propofol', 'fentanyl', 'médicament'],
+    answer: `SafeOp AI calcule les dosages selon les protocoles SFAR 2023 (mg/kg) :
+
+Adulte standard :
+• Propofol induction : 2.0 mg/kg IV bolus
+• Fentanyl : 3.0 µg/kg IV bolus
+• Atropine : 0.02 mg/kg (min 0.5 mg)
+• Éphédrine : 0.15 mg/kg
+
+Ajustements automatiques selon le profil patient :
+• Âge > 65 ans → −20% propofol et fentanyl
+• IRC légère (DFG < 60) → −25% fentanyl
+• HTA → −15% éphédrine
+• Pédiatrique (< 15 ans) → protocole dédié (+25% propofol, −33% fentanyl)
+
+Les doses sont recalculées en temps réel à partir du rapport pré-opératoire.`,
+  },
+  {
+    keys: ['pédiatrique', 'enfant', 'amygdale', 'pediatric'],
+    answer: `Protocole pédiatrique SafeOp AI (SFAR 2023 / HAS) :
+
+Ajustements vs adulte :
+• Propofol induction : 2.5 mg/kg (+25% — métabolisme accéléré)
+• Fentanyl : 2.0 µg/kg (−33% — sensibilité respiratoire plus élevée)
+• Atropine : 0.02 mg/kg (minimum absolu 0.1 mg)
+• Seuils d'alarme recalibrés : FC normale 70-120 bpm, SpO₂ > 97%
+
+Surveillance renforcée : EtCO₂ post-extubation (risque apnée), glycémie peropératoire.
+Analgésie post-op : Paracétamol 15 mg/kg IV recommandé.`,
+  },
+  {
+    keys: ['hors ligne', 'offline', 'internet', 'réseau', 'connexion'],
+    answer: `Oui, SafeOp AI fonctionne 100% hors ligne grâce à deux composants offline :
+
+1. Expert Medical Response Engine (EMRE) — analyse clinique temps réel, zéro dépendance réseau
+2. Mistral 7B via Ollama — LLM local sur le serveur de l'établissement
+
+Aucune donnée patient ne sort du réseau hospitalier. Conforme RGPD et aux exigences de confidentialité médicale.
+
+Débit réseau requis pour le mode multi-salles : 1 Mbps LAN (connexion interne uniquement).`,
+  },
+  {
+    keys: ['modèle', 'llm', 'ia', 'intelligence', 'comment ça marche', 'mistral'],
+    answer: `SafeOp AI utilise une architecture IA hybride à deux couches :
+
+Couche 1 — EMRE (Expert Medical Response Engine) :
+• 100% déterministe et offline
+• Règles médicales basées sur SFAR 2023, WHO Anesthesia Guidelines, Vidal
+• Latence < 50ms — analyse vitaux chaque seconde
+
+Couche 2 — LLM conversationnel :
+• Mistral 7B via Ollama (local, gratuit, hors ligne)
+• Fallback : Claude Haiku API (Anthropic)
+• RAG sur base de connaissances médicales internes
+
+Ce choix hybride garantit fiabilité clinique (EMRE) + dialogue naturel (LLM).`,
+  },
+  {
+    keys: ['responsabilité', 'erreur', 'risque', 'sécurité', 'légal'],
+    answer: `SafeOp AI est un système d'aide à la décision (DSS), pas un dispositif autonome.
+
+Cadre légal :
+• Classifié "IA à haut risque" — EU AI Act Article 22 (usage médical)
+• Toute décision clinique reste sous responsabilité exclusive du médecin anesthésiste
+• L'IA recommande, le médecin décide et valide
+
+Ce que SafeOp AI ne fait PAS :
+• N'administre aucun médicament
+• Ne remplace pas le jugement clinique
+• Ne prescrit pas
+
+Ce que SafeOp AI FAIT :
+• Surveille en continu (< 3s de latence)
+• Calcule les doses (protocoles validés)
+• Archive chaque décision (traçabilité médico-légale)`,
+  },
+  {
+    keys: ['objectif', 'problème', 'solution', 'quoi', 'safeop'],
+    answer: `SafeOp AI résout 3 problèmes critiques en anesthésie :
+
+1. Surveillance simultanée multi-salles
+   Un technicien peut monitorer N salles d'opération depuis une interface centralisée.
+
+2. Réduction du risque infectieux
+   Moins de présence physique en salle = moins de vecteurs de contamination.
+
+3. Documentation automatique
+   Compte-rendu d'anesthésie généré automatiquement — archivage médico-légal instantané.
+
+Contexte ESPRIM 2026 : les 8 objectifs trackés en temps réel pendant la simulation démontrent chaque capacité du système en conditions réelles.`,
+  },
+];
+
+function staticAnswer(question) {
+  const q = question.toLowerCase();
+  const match = STATIC_QA.find(item => item.keys.some(k => q.includes(k)));
+  if (match) return match.answer;
+  return `SafeOp AI est un système intelligent d'aide à l'anesthésie développé pour ESPRIM 2026.
+
+Il surveille les paramètres vitaux en temps réel, calcule les dosages précis (protocoles SFAR 2023), détecte les urgences en moins de 3 secondes, et génère automatiquement les comptes-rendus d'anesthésie.
+
+Questions suggérées :
+• Comment SafeOp AI détecte une hypotension ?
+• Quel dosage pour un patient de 70 kg ?
+• Comment fonctionne la chirurgie pédiatrique ?
+• SafeOp AI peut-il fonctionner hors ligne ?
+
+*(Mode hors ligne — démarrez le serveur local pour les réponses IA complètes)*`;
+}
+
 const SUGGESTED_DEFAULT = [
   "Comment SafeOp AI détecte une hypotension ?",
   "Quel modèle d'IA est utilisé ?",
@@ -116,8 +254,8 @@ export default function ChatBot({ currentVitals, patient, dosePlan, running }) {
     } catch {
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: "Désolé, le service LLM est temporairement indisponible. Vérifiez qu'Ollama est démarré (`ollama serve`) avec le modèle Mistral (`ollama pull mistral`).",
-        source: 'error',
+        content: staticAnswer(content),
+        source: 'static',
       }]);
     } finally {
       setLoading(false);

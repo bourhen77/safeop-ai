@@ -26,7 +26,8 @@ const SCENARIO_LABELS = {
   pediatric: 'Pédiatrique — Amygdalectomie',
 };
 
-const socket = io('http://localhost:3001', { autoConnect: false });
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+const socket = io(BACKEND_URL, { autoConnect: false, reconnectionAttempts: 3, timeout: 5000 });
 
 function ReportModal({ open, onClose, reportData }) {
   if (!reportData) return null;
@@ -94,6 +95,7 @@ export default function Demo() {
   const [preOpOpen, setPreOpOpen] = useState(false);
   const [preOpPatient, setPreOpPatient] = useState(null);
   const [preOpDoses, setPreOpDoses] = useState(null);
+  const [backendOnline, setBackendOnline] = useState(true);
 
   useEffect(() => {
     socket.connect();
@@ -141,6 +143,9 @@ export default function Demo() {
       setRunning(false);
       setElapsed(0);
     });
+
+    socket.on('connect', () => setBackendOnline(true));
+    socket.on('connect_error', () => setBackendOnline(false));
 
     return () => socket.disconnect();
   }, []);
@@ -225,6 +230,31 @@ export default function Demo() {
             </Button>
           </Stack>
         </Stack>
+
+        {/* Backend offline banner */}
+        {!backendOnline && (
+          <Paper elevation={0} sx={{
+            p: 1.5, mb: 1.5,
+            background: 'rgba(255,152,0,0.08)',
+            border: '1px solid rgba(255,152,0,0.35)',
+            borderRadius: 2,
+          }}>
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <Typography sx={{ fontSize: '1rem' }}>⚠️</Typography>
+              <Box>
+                <Typography variant="caption" fontWeight={700} sx={{ color: '#FFB300', display: 'block' }}>
+                  MODE PRÉSENTATION — Serveur backend non connecté
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+                  La démo interactive nécessite le serveur local. Lancez&nbsp;
+                  <Box component="span" sx={{ fontFamily: '"Roboto Mono"', color: 'primary.main' }}>cd backend &amp;&amp; npm run dev</Box>
+                  &nbsp;puis accédez à&nbsp;
+                  <Box component="span" sx={{ fontFamily: '"Roboto Mono"', color: 'primary.main' }}>http://localhost:5173/demo</Box>
+                </Typography>
+              </Box>
+            </Stack>
+          </Paper>
+        )}
 
         {/* Pre-op patient banner */}
         {preOpPatient && !running && (
