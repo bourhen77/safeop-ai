@@ -2,10 +2,14 @@
   "name": "safeop-ai-frontend",
   "version": "1.0.0",
   "type": "module",
+  "homepage": "https://bourhen77.github.io/safeop-ai",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "build:gh": "cross-env GITHUB_PAGES=true vite build",
+    "preview": "vite preview",
+    "predeploy": "npm run build:gh",
+    "deploy": "gh-pages -d dist"
   },
   "dependencies": {
     "@emotion/react": "^11.11.1",
@@ -21,6 +25,8 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.0",
+    "cross-env": "^10.1.0",
+    "gh-pages": "^6.3.0",
     "vite": "^5.0.0"
   }
 }
